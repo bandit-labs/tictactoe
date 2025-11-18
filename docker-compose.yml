@@ -1,28 +1,30 @@
 version: "3.9"
-
 services:
-  db:
-    image: postgres:17.6-alpine
-    container_name: kdg_postgres
+
+  gamedb:
+    image: postgres:16.1-alpine
+    container_name: gamedb
     restart: always
-
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres
-      PGDATA: /var/lib/postgresql/data/pgdata
-
+      POSTGRES_USER: game_user
+      POSTGRES_PASSWORD: game_password
+      POSTGRES_DB: game_db
     ports:
-      - "5443:5432"
-
+      - "5433:5432"  # exposed only for debugging
     volumes:
-      - ./postgresql/data:/var/lib/postgresql
-      - ./init-scripts/sql:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
 
-    networks:
-      - kdg-backend
+  game_backend:
+    build:
+      context: ./TicTacToe
+      dockerfile: Dockerfile
+    container_name: game_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./TicTacToe:/app/TicTacToe
+    depends_on:
+      - gamedb
 
-networks:
-  kdg-backend:
-    name: kdg-back-network
-    driver: bridge
+volumes:
+  pgdata:
