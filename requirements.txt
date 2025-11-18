@@ -1,0 +1,4 @@
+pydantic-settings
+SQLAlchemy==2.0.44
+fastapi==0.119.0
+pydantic==2.12.3
