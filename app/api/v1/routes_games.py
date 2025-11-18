@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.core.db import get_db
 from app.infra.orm_models import Game
 from app.schemas.game import GameCreate, GameRead
@@ -35,7 +34,7 @@ def play_move(game_id: str, payload: MoveCreate, db: Session = Depends(get_db)):
 
 
 def _to_read(game: Game) -> GameRead:
-    board = [[c for c in row] for row in _to_board(game.board_state)]
+    board = [[c for c in row] for row in board_from_string(game.board_state)]
     return GameRead(
         id=game.id,
         player_x_id=game.player_x_id,
@@ -49,7 +48,3 @@ def _to_read(game: Game) -> GameRead:
         created_at=game.created_at,
         finished_at=game.finished_at,
     )
-
-
-def _to_board(state_str: str):
-    return board_from_string(state_str)

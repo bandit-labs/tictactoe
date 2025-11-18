@@ -4,12 +4,12 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY TicTacToe/requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy this folder (TicTacToe) into /app/TicTacToe inside container
-COPY . /app/TicTacToe
+COPY TicTacToe /app/TicTacToe
 
 # Make TicTacToe a Python package
 RUN touch /app/TicTacToe/__init__.py

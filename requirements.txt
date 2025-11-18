@@ -1,4 +1,5 @@
-pydantic-settings
-SQLAlchemy==2.0.44
 fastapi==0.119.0
+SQLAlchemy==2.0.44
 pydantic==2.12.3
+pydantic-settings==2.12.0
+requests==2.32.5
