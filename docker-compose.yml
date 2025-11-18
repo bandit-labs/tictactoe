@@ -1,0 +1,30 @@
+version: "3.9"
+services:
+
+  gamedb:
+    image: postgres:16.1-alpine
+    container_name: gamedb
+    restart: always
+    environment:
+      POSTGRES_USER: game_user
+      POSTGRES_PASSWORD: game_password
+      POSTGRES_DB: game_db
+    ports:
+      - "5433:5432"  # exposed only for debugging
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  game_backend:
+    build:
+      context: ./TicTacToe
+      dockerfile: Dockerfile
+    container_name: game_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./TicTacToe:/app/TicTacToe
+    depends_on:
+      - gamedb
+
+volumes:
+  pgdata:
