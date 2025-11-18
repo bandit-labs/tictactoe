@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:17.6-alpine
+    container_name: kdg_postgres
+    restart: always
+
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      - "5443:5432"
+
+    volumes:
+      - ./postgresql/data:/var/lib/postgresql
+      - ./init-scripts/sql:/docker-entrypoint-initdb.d
+
+    networks:
+      - kdg-backend
+
+networks:
+  kdg-backend:
+    name: kdg-back-network
+    driver: bridge
