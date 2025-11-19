@@ -55,7 +55,7 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
     use_ai_now = bool(payload.use_ai and is_ai_turn)
 
     if use_ai_now:
-        # --- AI MOVE (AI plays as O) ---
+        # AI Move
         difficulty = payload.ai_difficulty or "medium"
 
         (row, col), evaluation, _meta = request_ai_move(
@@ -115,13 +115,14 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
     # Fire-and-forget logging to Platform
     try:
         move_index = row * 3 + col
-        log_move_to_platform(
-            previous_state=state_before_dict,
-            new_state=state_after_dict,
-            move_index=move_index,
-            player_id=player_id,
-            heuristic_value=heuristic_val,
-        )
+        # TODO: Uncomment when integrating with PLATFORM
+        # log_move_to_platform(
+        #     previous_state=state_before_dict,
+        #     new_state=state_after_dict,
+        #     move_index=move_index,
+        #     player_id=player_id,
+        #     heuristic_value=heuristic_val,
+        # )
 
         if new_state.status in (GameStatus.X_WON, GameStatus.O_WON, GameStatus.DRAW):
             history_payload = [
@@ -132,10 +133,11 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
                 }
                 for log in history_after_logs
             ]
-            send_final_result_to_platform(
-                final_state=state_after_dict,
-                history=history_payload,
-            )
+            # TODO: Uncomment when integrating with PLATFORM
+            # send_final_result_to_platform(
+            #     final_state=state_after_dict,
+            #     history=history_payload,
+            # )
     except Exception:
         # Don't break gameplay if platform logging fails
         pass
