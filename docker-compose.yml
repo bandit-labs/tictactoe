@@ -1,6 +1,6 @@
 version: "3.9"
-services:
 
+services:
   gamedb:
     image: postgres:16.1-alpine
     container_name: gamedb
@@ -10,21 +10,59 @@ services:
       POSTGRES_PASSWORD: game_password
       POSTGRES_DB: game_db
     ports:
-      - "5433:5432"  # exposed only for debugging
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - game-net
 
-  game_backend:
+  ai-service:
     build:
-      context: ./TicTacToe
+      context: ../../../ai-modules
       dockerfile: Dockerfile
-    container_name: game_backend
+    container_name: ai-service
+    restart: always
     ports:
-      - "8000:8000"
-    volumes:
-      - ./TicTacToe:/app/TicTacToe
+      - "8001:8001"
+    networks:
+      - game-net
+
+  tictactoe-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tictactoe-backend
+    restart: always
     depends_on:
       - gamedb
+      - ai-service
+    environment:
+      DATABASE_URL: postgresql://game_user:game_password@gamedb:5432/game_db
+
+      AI_SERVICE_URL: http://ai-service:8001
+    ports:
+      - "8000:8000"
+    networks:
+      - game-net
+
+  tictactoe-frontend:
+    build:
+      context: ../../front/TicTacToe
+      dockerfile: Dockerfile
+    container_name: tictactoe-frontend
+    restart: always
+    depends_on:
+      - tictactoe-backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    networks:
+      - game-net
 
 volumes:
   pgdata:
+
+networks:
+  game-net:
+    driver: bridge
