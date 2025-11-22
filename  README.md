@@ -180,6 +180,25 @@ It exposes a small HTTP API over FastAPI, persists game state in PostgreSQL usin
 └── (other files like requirements.txt, .env, ...)
 ```
 
+## Unified file/directory structure for Containerization to work
+## Project structure
+```
+YOUR FOLDER ROOT (Bandit Games, bandit, choose yourself, etc...)
+├── ai-modules/                 # clone from git
+│     └ ...
+│
+├── Game/                       # name however you like
+│     ├── back/                 # name however you like
+│     │    └── TicTacToe/       # clone from git (Game Backend code)
+│     │         └ ...
+│     └── front/                # name however you like
+│          └── TicTacToe/       # clone from git (Game Frontend code)
+│               └ ...
+│
+└── (In the future unified Platform code)
+
+```
+
 ## Game original Source Code & Prompt Log
 - Source code author:
   - **Marc Frances** (marcft)
