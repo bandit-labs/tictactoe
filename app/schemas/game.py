@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from app.domain.models import GameStatus, Mark
 
@@ -8,7 +8,7 @@ from app.domain.models import GameStatus, Mark
 class GameCreate(BaseModel):
     """
     Placeholder for future data from Platform.
-    For now it is empty: backend fills players from Settings.
+    For now, it is empty: backend fills players from Settings.
     """
     pass
 

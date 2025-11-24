@@ -39,7 +39,6 @@ def apply_move(state: GameState, pos: Position) -> GameState:
     if state.board[r][c] != Mark.EMPTY:
         raise ValueError("Cell already occupied")
 
-    # copy board
     new_board = [row[:] for row in state.board]
     new_board[r][c] = state.next_player
 
@@ -79,7 +78,6 @@ def _compute_winner(board) -> Mark | None:
 
 
 def board_to_string(board) -> str:
-    # 9 characters, row-major
     return "".join(board[r][c].value for r in range(3) for c in range(3))
 
 

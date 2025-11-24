@@ -1,112 +1,145 @@
 from __future__ import annotations
-
-from datetime import datetime
-
+from typing import List
 from sqlalchemy.orm import Session
-from app.domain.logic import (
-    board_from_string,
-    board_to_string,
-    apply_move,
-    heuristic_value,
-)
-from app.domain.models import GameState, Mark, GameStatus
+from app.core.config import settings
+from app.domain.models import Mark, GameStatus
+from app.domain.logic import apply_move, heuristic_value
 from app.infra.orm_models import Game, MoveLog
-from app.infra import ai_client
+from app.services.game_state_mapper import game_to_state, state_to_game
 from app.schemas.game import GameCreate
 from app.schemas.move import MoveCreate
-from app.core.config import settings
-
-def _to_state(game: Game) -> GameState:
-    board = board_from_string(game.board_state)
-    winner: Mark | None = None
-    if game.status == GameStatus.X_WON:
-        winner = Mark.X
-    elif game.status == GameStatus.O_WON:
-        winner = Mark.O
-
-    return GameState(
-        board=board,
-        next_player=game.next_player,
-        status=game.status,
-        winner=winner,
-        move_count=game.move_count,
-    )
+from app.services.state_serializer import build_rich_state
+from app.services.ai_client import request_ai_move
+from app.services.platform_client import log_move_to_platform, send_final_result_to_platform
 
 
-def _serialize_state(state: GameState) -> dict:
-    return {
-        "board": [[cell.value for cell in row] for row in state.board],
-        "next_player": state.next_player.value,
-        "status": state.status.value,
-        "winner": state.winner.value if state.winner else None,
-        "move_count": state.move_count,
-    }
+# For now: AI always plays as O
+AI_PLAYER = Mark.O
 
 
 def create_game(db: Session, payload: GameCreate) -> Game:
-    state = GameState.new()
-
     game = Game(
         player_x_id=settings.demo_player_x_id,
         player_o_id=settings.demo_player_o_id,
         player_x_name=settings.demo_player_x_name,
         player_o_name=settings.demo_player_o_name,
-        status=state.status,
-        next_player=state.next_player,
-        move_count=state.move_count,
-        board_state=board_to_string(state.board),
+        status=GameStatus.IN_PROGRESS,
+        next_player=Mark.X,
+        move_count=0,
+        board_state=" " * 9,
     )
-
     db.add(game)
     db.commit()
     db.refresh(game)
     return game
 
 
-def add_move(db: Session, game_id: str, move_payload: MoveCreate) -> Game:
-    game = db.get(Game, game_id)
+def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
+    """
+    Apply a move to a game:
+      - if it's AI's turn *and* payload.use_ai is True -> let AI choose move (PvAI)
+      - otherwise -> use row/col from payload (human move)
+    """
+    game: Game | None = db.get(Game, game_id)
     if not game:
         raise ValueError("Game not found")
 
-    state_before = _to_state(game)
+    existing_logs: List[MoveLog] = list(game.moves or [])
 
+    state_before = game_to_state(game)
     if state_before.status != GameStatus.IN_PROGRESS:
-        raise ValueError("Game finished")
+        raise ValueError("Game already finished")
 
-    if state_before.next_player == Mark.X:
-        player_id = game.player_x_id
-    else:
-        player_id = game.player_o_id
+    # Is it AI's turn right now?
+    is_ai_turn = state_before.next_player == AI_PLAYER
+    use_ai_now = bool(payload.use_ai and is_ai_turn)
 
-    if move_payload.use_ai:
-        row, col = ai_client.choose_ai_move(state_before)
+    if use_ai_now:
+        # AI Move
+        difficulty = payload.ai_difficulty or "medium"
+
+        (row, col), evaluation, _meta = request_ai_move(
+            state=state_before,
+            difficulty=difficulty,
+        )
+
+        player_id = "AI"
         mark = state_before.next_player
+        heuristic_val = evaluation
     else:
-        row, col = move_payload.row, move_payload.col
+        if payload.row is None or payload.col is None:
+            # If UI accidentally sends use_ai=False but no coordinates
+            raise ValueError("row and col are required for human moves")
+
+        row = payload.row
+        col = payload.col
         mark = state_before.next_player
+        player_id = game.player_x_id if mark == Mark.X else game.player_o_id
+        heuristic_val = heuristic_value(state_before, for_player=mark)
 
-    state_after = apply_move(state_before, (row, col))
+    # Build rich state BEFORE move
+    state_before_dict = build_rich_state(game, state_before, existing_logs)
 
-    game.board_state = board_to_string(state_after.board)
-    game.next_player = state_after.next_player
-    game.status = state_after.status
-    game.move_count = state_after.move_count
-    if state_after.status in (GameStatus.X_WON, GameStatus.O_WON, GameStatus.DRAW):
-        game.finished_at = datetime.now()
+    # Apply move with domain rules
+    new_state = apply_move(state_before, (row, col))
 
-    log = MoveLog(
+    # Update Game entity from new_state
+    state_to_game(game, new_state)
+
+    # Prepare a MoveLog object
+    move_log = MoveLog(
         game_id=game.id,
-        move_number=state_after.move_count,
+        move_number=new_state.move_count,
         player_id=player_id,
         mark=mark,
         row=row,
         col=col,
-        state_before=_serialize_state(state_before),
-        state_after=_serialize_state(state_after),
-        heuristic_value=heuristic_value(state_after),
+        state_before={},  # filled later
+        state_after={},   # filled later
+        heuristic_value=heuristic_val,
     )
 
-    db.add(log)
+    # History AFTER = existing logs + this new one
+    history_after_logs = existing_logs + [move_log]
+
+    state_after_dict = build_rich_state(game, new_state, history_after_logs)
+
+    move_log.state_before = state_before_dict
+    move_log.state_after = state_after_dict
+
+    db.add(game)
+    db.add(move_log)
     db.commit()
     db.refresh(game)
+
+    # Fire-and-forget logging to Platform
+    try:
+        move_index = row * 3 + col
+        # TODO: Uncomment when integrating with PLATFORM
+        # log_move_to_platform(
+        #     previous_state=state_before_dict,
+        #     new_state=state_after_dict,
+        #     move_index=move_index,
+        #     player_id=player_id,
+        #     heuristic_value=heuristic_val,
+        # )
+
+        if new_state.status in (GameStatus.X_WON, GameStatus.O_WON, GameStatus.DRAW):
+            history_payload = [
+                {
+                    "player": log.mark.value,
+                    "move": log.row * 3 + log.col,
+                    "move_number": log.move_number,
+                }
+                for log in history_after_logs
+            ]
+            # TODO: Uncomment when integrating with PLATFORM
+            # send_final_result_to_platform(
+            #     final_state=state_after_dict,
+            #     history=history_payload,
+            # )
+    except Exception:
+        # Don't break gameplay if platform logging fails
+        pass
+
     return game
