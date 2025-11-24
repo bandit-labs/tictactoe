@@ -188,12 +188,10 @@ YOUR FOLDER ROOT (Bandit Games, bandit, choose yourself, etc...)
 │     └ ...
 │
 ├── Game/                       # name however you like
-│     ├── back/                 # name however you like
-│     │    └── TicTacToe/       # clone from git (Game Backend code)
-│     │         └ ...
-│     └── front/                # name however you like
-│          └── TicTacToe/       # clone from git (Game Frontend code)
-│               └ ...
+│     ├── backend/              # clone from git (Game Backend code)
+│     │    └── ...
+│     └── frontend/             # clone from git (Game Frontend code)
+│          └── ...
 │
 └── (In the future unified Platform code)
 

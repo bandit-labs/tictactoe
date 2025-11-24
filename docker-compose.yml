@@ -18,7 +18,7 @@ services:
 
   ai-service:
     build:
-      context: ../../../ai-modules
+      context: ../../ai-modules
       dockerfile: Dockerfile
     container_name: ai-service
     restart: always
@@ -47,7 +47,7 @@ services:
 
   tictactoe-frontend:
     build:
-      context: ../../front/TicTacToe
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: tictactoe-frontend
     restart: always
