@@ -26,7 +26,7 @@ def log_move_to_platform(
 
     try:
         r = requests.post(
-            f"{settings.platform_backend_url}/api/log_move",
+            f"{settings.platform_backend_url}/game-sessions/moves",
             json=entry,
             timeout=5,
         )
@@ -49,7 +49,7 @@ def send_final_result_to_platform(
 
     try:
         r = requests.post(
-            f"{settings.platform_backend_url}/api/game_result",
+            f"{settings.platform_backend_url}/game-sessions/results",
             json=result,
             timeout=5,
         )
