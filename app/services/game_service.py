@@ -18,11 +18,33 @@ AI_PLAYER = Mark.O
 
 
 def create_game(db: Session, payload: GameCreate) -> Game:
+    """
+    Create a new game based on mode:
+    - PvAI: player_o_id = AI & player_o_name = "AI"
+    - PvP: both players from payload
+    """
+    # Determine player O based on mode
+    if payload.mode == "pvai":
+        player_o_id = "AI"
+        player_o_name = "AI"
+    elif payload.mode == "pvp":
+        if not payload.player_o_id:
+            raise ValueError("Player O_id is required for PvP mode")
+        player_o_id = payload.player_o_id
+        player_o_name = payload.player_o_name or "Player O"
+    else:
+        raise ValueError(f"Invalid mode: {payload.mode}")
+
+    # Configure player X
+    player_x_name = payload.player_x_name or "Player X"
+
     game = Game(
-        player_x_id=settings.demo_player_x_id,
-        player_o_id=settings.demo_player_o_id,
-        player_x_name=settings.demo_player_x_name,
-        player_o_name=settings.demo_player_o_name,
+        player_x_id=payload.player_x_id,
+        player_o_id=player_o_id,
+        player_x_name=player_x_name,
+        player_o_name=player_o_name,
+        mode=payload.mode,
+        ai_difficulty=payload.ai_difficulty if payload.mode == "pvai" else None,
         status=GameStatus.IN_PROGRESS,
         next_player=Mark.X,
         move_count=0,
@@ -34,11 +56,16 @@ def create_game(db: Session, payload: GameCreate) -> Game:
     return game
 
 
-def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
+def add_move(db: Session, game_id: str, payload: MoveCreate, is_ai_move: bool = False) -> Game:
     """
-    Apply a move to a game:
-      - if it's AI's turn *and* payload.use_ai is True -> let AI choose move (PvAI)
-      - otherwise -> use row/col from payload (human move)
+    Apply a move to a game
+
+    For PvAI games:
+        - If it's the human player's turn: use row/col from payload
+        - If it's AI's turn: call AI service (when called from background task)
+
+      For PvP games:
+        - Always use row/col from payload (either player)
     """
     game: Game | None = db.get(Game, game_id)
     if not game:
@@ -50,13 +77,16 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
     if state_before.status != GameStatus.IN_PROGRESS:
         raise ValueError("Game already finished")
 
-    # Is it AI's turn right now?
-    is_ai_turn = state_before.next_player == AI_PLAYER
-    use_ai_now = bool(payload.use_ai and is_ai_turn)
+    # Determine if this is an AI move
+    # Game mode is PvAI AND Current player is AI AND use_ai flag is True
+    can_use_ai = (
+        game.mode == "pvai"
+        and state_before.next_player == AI_PLAYER
+    )
+    use_ai_now = can_use_ai and is_ai_move
 
     if use_ai_now:
-        # AI Move
-        difficulty = payload.ai_difficulty or "medium"
+        difficulty = game.ai_difficulty or payload.ai_difficulty or "medium"
 
         (row, col), evaluation, _meta = request_ai_move(
             state=state_before,
@@ -115,14 +145,13 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
     # Fire-and-forget logging to Platform
     try:
         move_index = row * 3 + col
-        # TODO: Uncomment when integrating with PLATFORM
-        # log_move_to_platform(
-        #     previous_state=state_before_dict,
-        #     new_state=state_after_dict,
-        #     move_index=move_index,
-        #     player_id=player_id,
-        #     heuristic_value=heuristic_val,
-        # )
+        log_move_to_platform(
+            previous_state=state_before_dict,
+            new_state=state_after_dict,
+            move_index=move_index,
+            player_id=player_id,
+            heuristic_value=heuristic_val,
+        )
 
         if new_state.status in (GameStatus.X_WON, GameStatus.O_WON, GameStatus.DRAW):
             history_payload = [
@@ -133,11 +162,10 @@ def add_move(db: Session, game_id: str, payload: MoveCreate) -> Game:
                 }
                 for log in history_after_logs
             ]
-            # TODO: Uncomment when integrating with PLATFORM
-            # send_final_result_to_platform(
-            #     final_state=state_after_dict,
-            #     history=history_payload,
-            # )
+            send_final_result_to_platform(
+                final_state=state_after_dict,
+                history=history_payload,
+            )
     except Exception:
         # Don't break gameplay if platform logging fails
         pass

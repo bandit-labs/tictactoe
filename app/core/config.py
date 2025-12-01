@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str = Field(
-        default="postgresql://game_user:game_password@localhost:5433/game_db",
+        default="postgresql://user:password@localhost:5442/integration",
         description="SQLAlchemy database URL",
     )
 
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         description="Default AI difficulty (easy|medium|hard)",
     )
     platform_backend_url: str = Field(
-        default="http://localhost:8080",
+        default="http://localhost:8080/api/v1",
         description="Base URL of the main Platform backend for logging",
     )
 

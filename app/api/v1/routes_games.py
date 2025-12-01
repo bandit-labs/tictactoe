@@ -13,8 +13,12 @@ router = APIRouter(prefix="/games", tags=["games"])
 
 
 @router.post("", response_model=GameRead)
-def create_game_endpoint(db: Session = Depends(get_db)):
-    game = game_service.create_game(db, GameCreate())
+def create_game_endpoint(payload: GameCreate, db: Session = Depends(get_db)):
+    """
+    Create a new game session
+    Platform call this with player IDs and more
+    """
+    game = game_service.create_game(db, payload)
     return _to_read(game)
 
 
@@ -32,20 +36,31 @@ def play_move(game_id: str,
               db: Session = Depends(get_db),
               background_tasks: BackgroundTasks = None,):
     """
-    Apply exactly ONE move (human or AI) and return immediately.
-    If this is a PvAI game (payload.use_ai) and after the human move
-    it's AI's turn, schedule the AI move in a background task.
+    Apply a move to the game.
+      - For PvP: accepts row/col from either player
+      - For PvAI: accepts row/col from human, automatically triggers AI move
+
+      The mode is determined from the game in the database, not from the request.
     """
     try:
-        # First move
+        # Fetch the game first to check its mode
+        game = db.get(Game, game_id)
+        if not game:
+            raise HTTPException(status_code=404, detail="Game not found")
+
+        # Determine if AI should play based on game mode
+        is_pvai_mode = game.mode == "pvai"
+
         game = game_service.add_move(db, game_id, payload)
 
-        # if mode is PvAI, and it is AI turn, schedule AI move async
-        if (payload.use_ai
+        # If PvAI mode AND game still in progress AND it's AI's turn Schedule AI move in background
+        if (is_pvai_mode
             and game.status == GameStatus.IN_PROGRESS
             and game.next_player == AI_PLAYER
-            and background_tasks is not None):
-            background_tasks.add_task(run_ai_move, game.id, payload.ai_difficulty)
+            and background_tasks is not None
+        ):
+            ai_difficulty = payload.ai_difficulty or "medium"
+            background_tasks.add_task(run_ai_move, game.id, ai_difficulty)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -57,10 +72,9 @@ def run_ai_move(game_id:str, ai_difficulty:str | None):
         ai_payload = MoveCreate(
             row=None,
             col=None,
-            use_ai=True,
             ai_difficulty=ai_difficulty,
         )
-        game_service.add_move(db, game_id, ai_payload)
+        game_service.add_move(db, game_id, ai_payload, is_ai_move=True)
     finally:
         db.close()
 
@@ -75,6 +89,8 @@ def _to_read(game: Game) -> GameRead:
         status=game.status,
         next_player=game.next_player,
         move_count=game.move_count,
+        mode=game.mode,
+        ai_difficulty=game.ai_difficulty,
         board=board,
         created_at=game.created_at,
         finished_at=game.finished_at,
