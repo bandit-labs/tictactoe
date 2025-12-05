@@ -11,13 +11,12 @@ from app.domain import (
     Move,
     PlayerId,
     Mark,
-    GameStatus,
     GameMode,
     AIDifficulty,
     Board,
     Position,
 )
-from app.infra.orm_models import Game as ORMGame, MoveLog as ORMMoveLog
+from app.infrastructure.orm_models import Game as ORMGame, MoveLog as ORMMoveLog
 
 
 class GameORMMapper:

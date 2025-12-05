@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.domain import Game, IGameRepository
-from app.infra.orm_models import Game as ORMGame
+from app.infrastructure.orm_models import Game as ORMGame
 from .mappers import GameORMMapper
 
 
