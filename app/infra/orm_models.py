@@ -13,8 +13,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from enum import Enum as PyEnum
 from app.core.db import Base
 from app.core.config import settings
-from app.domain.models import GameStatus, Mark
-
+from app.domain import GameStatus, Mark
 
 SCHEMA = settings.db_schema
 
