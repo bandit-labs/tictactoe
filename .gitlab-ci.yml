@@ -7,6 +7,7 @@
 stages:
     - test
     - build
+    - publish
 
 # Global variables
 variables:
@@ -31,7 +32,7 @@ cache:
     - pip install -r requirements.txt
 
 # Quality Gates
-lint:
+lint-check:
   <<: *python_setup
   stage: test
   image: python:3.12-slim
@@ -46,8 +47,31 @@ lint:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   allow_failure: false
 
+
+# Security Check
+security-scan:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running security scan..."
+    - pip install bandit  # Install bandit
+    - bandit -r app/ -f json -o bandit-report.json || true
+    - bandit -r app/ -ll
+    - echo "Security scan completed"
+  artifacts:
+    when: always
+    paths:
+      - bandit-report.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: true  # Warning only
+
+
 # Run Tests
-test:
+test-job:
   <<: *python_setup
   stage: test
   image: python:3.12-slim
@@ -73,9 +97,8 @@ test:
   allow_failure: false
 
 
-# build Stage
-
-build:
+# Build Stage
+build-job:
   stage: build
   image: docker:24-dind
   services:
@@ -87,7 +110,7 @@ build:
     - docker build -t $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
     - echo "Saving image to tar file for reuse..."
     - docker save $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA -o image.tar
-    - echo "Docker build completed ✓"
+    - echo "Docker build completed"
     - echo "Image tagged as:"
     - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
   after_script:
@@ -100,4 +123,41 @@ build:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   dependencies:
-    - test  # Only run if tests pass
+    - test-job  # Only run if tests pass
+
+
+# Publish stage
+publish-job:
+  stage: publish
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - echo "Loading Docker image from artifact..."
+    - docker load -i image.tar
+    - echo "Tagging and publishing Docker image to registry..."
+    - docker tag $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG
+    - docker tag $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_NAME:latest
+    - docker push $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG
+    - docker push $DOCKER_IMAGE_NAME:latest
+    - echo "Published to registry successfully!"
+    - echo ""
+    - echo "Available tags:"
+    - echo "  - $DOCKER_IMAGE_NAME:latest"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG"
+    - echo ""
+    - 'echo "Pull with: docker pull $DOCKER_IMAGE_NAME:latest"'
+  after_script:
+    - docker image prune -af --filter "until=24h" || true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+  dependencies:
+    - build-job
+  environment:
+    name: production
+    url: $CI_REGISTRY_IMAGE/backend-tictactoe
