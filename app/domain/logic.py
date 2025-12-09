@@ -55,8 +55,10 @@ def apply_move(state: GameState, pos: Position) -> GameState:
         status = GameStatus.IN_PROGRESS
 
     next_player = (
-        Mark.O if state.next_player == Mark.X else Mark.X
-    ) if status == GameStatus.IN_PROGRESS else state.next_player
+        (Mark.O if state.next_player == Mark.X else Mark.X)
+        if status == GameStatus.IN_PROGRESS
+        else state.next_player
+    )
 
     return GameState(
         board=new_board,

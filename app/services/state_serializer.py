@@ -63,10 +63,7 @@ def build_rich_state(
 
     # board with "." for empty
     board = [
-        [
-            "." if cell == Mark.EMPTY else cell.value
-            for cell in row
-        ]
+        ["." if cell == Mark.EMPTY else cell.value for cell in row]
         for row in state.board
     ]
 

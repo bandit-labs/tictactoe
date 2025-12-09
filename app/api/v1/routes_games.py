@@ -31,10 +31,12 @@ def get_game(game_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{game_id}/moves", response_model=GameRead)
-def play_move(game_id: str,
-              payload: MoveCreate,
-              db: Session = Depends(get_db),
-              background_tasks: BackgroundTasks = None,):
+def play_move(
+    game_id: str,
+    payload: MoveCreate,
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None,
+):
     """
     Apply a move to the game.
       - For PvP: accepts row/col from either player
@@ -54,7 +56,8 @@ def play_move(game_id: str,
         game = game_service.add_move(db, game_id, payload)
 
         # If PvAI mode AND game still in progress AND it's AI's turn Schedule AI move in background
-        if (is_pvai_mode
+        if (
+            is_pvai_mode
             and game.status == GameStatus.IN_PROGRESS
             and game.next_player == AI_PLAYER
             and background_tasks is not None
@@ -66,7 +69,8 @@ def play_move(game_id: str,
         raise HTTPException(status_code=400, detail=str(e))
     return _to_read(game)
 
-def run_ai_move(game_id:str, ai_difficulty:str | None):
+
+def run_ai_move(game_id: str, ai_difficulty: str | None):
     db = SessionLocal()
     try:
         ai_payload = MoveCreate(
@@ -77,6 +81,7 @@ def run_ai_move(game_id:str, ai_difficulty:str | None):
         game_service.add_move(db, game_id, ai_payload, is_ai_move=True)
     finally:
         db.close()
+
 
 def _to_read(game: Game) -> GameRead:
     board = [[c for c in row] for row in board_from_string(game.board_state)]

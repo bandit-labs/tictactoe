@@ -6,6 +6,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 def log_move_to_platform(
     previous_state: Dict[str, Any],
     new_state: Dict[str, Any],
@@ -54,6 +55,8 @@ def send_final_result_to_platform(
             timeout=5,
         )
         r.raise_for_status()
-        logger.info("Sent final result to platform backend for game %s", final_state["game_id"])
+        logger.info(
+            "Sent final result to platform backend for game %s", final_state["game_id"]
+        )
     except Exception as e:
         logger.error("Failed to send final result to platform: %s", e)

@@ -10,7 +10,10 @@ from app.schemas.game import GameCreate
 from app.schemas.move import MoveCreate
 from app.services.state_serializer import build_rich_state
 from app.services.ai_client import request_ai_move
-from app.services.platform_client import log_move_to_platform, send_final_result_to_platform
+from app.services.platform_client import (
+    log_move_to_platform,
+    send_final_result_to_platform,
+)
 
 
 # For now: AI always plays as O
@@ -56,7 +59,9 @@ def create_game(db: Session, payload: GameCreate) -> Game:
     return game
 
 
-def add_move(db: Session, game_id: str, payload: MoveCreate, is_ai_move: bool = False) -> Game:
+def add_move(
+    db: Session, game_id: str, payload: MoveCreate, is_ai_move: bool = False
+) -> Game:
     """
     Apply a move to a game
 
@@ -79,10 +84,7 @@ def add_move(db: Session, game_id: str, payload: MoveCreate, is_ai_move: bool = 
 
     # Determine if this is an AI move
     # Game mode is PvAI AND Current player is AI AND use_ai flag is True
-    can_use_ai = (
-        game.mode == "pvai"
-        and state_before.next_player == AI_PLAYER
-    )
+    can_use_ai = game.mode == "pvai" and state_before.next_player == AI_PLAYER
     use_ai_now = can_use_ai and is_ai_move
 
     if use_ai_now:
@@ -125,7 +127,7 @@ def add_move(db: Session, game_id: str, payload: MoveCreate, is_ai_move: bool = 
         row=row,
         col=col,
         state_before={},  # filled later
-        state_after={},   # filled later
+        state_after={},  # filled later
         heuristic_value=heuristic_val,
     )
 

@@ -6,6 +6,7 @@ from app.domain.models import GameState, Mark
 
 AI_BASE_URL = settings.ai_service_url.rstrip("/")
 
+
 def _state_to_ai_model_payload(state: GameState) -> dict:
     """
     Convert our domain GameState into the AiMoveRequest.state format:
@@ -38,10 +39,7 @@ def request_ai_move(
     Call external AI service and return (row, col), evaluation, metadata.
     """
     board_for_ai = [
-        [
-            None if cell == Mark.EMPTY else cell.value
-            for cell in row
-        ]
+        [None if cell == Mark.EMPTY else cell.value for cell in row]
         for row in state.board
     ]
 
