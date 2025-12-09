@@ -15,6 +15,7 @@ def mock_db_engine():
     mock_session_factory = MagicMock(spec=sessionmaker)
 
     # Patch the engine and session factory in the core module
-    with patch("app.core.db.engine", mock_engine), \
-         patch("app.core.db.SessionLocal", mock_session_factory):
+    with patch("app.core.db.engine", mock_engine), patch(
+        "app.core.db.SessionLocal", mock_session_factory
+    ):
         yield  # Run the test
