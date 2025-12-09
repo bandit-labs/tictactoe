@@ -3,6 +3,7 @@ Game State Serializer Implementation
 Concrete implementation of IGameStateSerializer interface
 Serializes game state to dictionary format for API/platform
 """
+
 from typing import Dict, Any, List
 
 from app.domain import (
@@ -29,10 +30,7 @@ class GameStateSerializer(IGameStateSerializer):
         """
         # Convert board (use '.' for empty cells for platform)
         board = [
-            [
-                "." if cell == Mark.EMPTY else cell.value
-                for cell in row
-            ]
+            ["." if cell == Mark.EMPTY else cell.value for cell in row]
             for row in game.board.cells
         ]
 

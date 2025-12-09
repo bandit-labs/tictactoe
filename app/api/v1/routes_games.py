@@ -3,6 +3,7 @@ Game API Routes (Refactored)
 Presentation layer using clean architecture with dependency injection
 Thin controllers that delegate to use cases
 """
+
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -18,7 +19,6 @@ from app.core.dependencies import (
 )
 
 from app.domain import (
-    IGameRepository,
     IAIService,
     IPlatformService,
     IGameStateSerializer,
@@ -44,6 +44,7 @@ router = APIRouter(prefix="/games", tags=["games"])
 
 
 # Dependency Injection Helpers
+
 
 def inject_create_game_use_case(
     db: Session = Depends(get_db),
@@ -78,6 +79,7 @@ def inject_play_move_use_case(
 
 
 # API Endpoints
+
 
 @router.post("", response_model=GameResponse)
 def create_game_endpoint(
@@ -177,6 +179,7 @@ def play_move_endpoint(
 
 # Background Tasks
 
+
 def run_ai_move_background(
     game_id: str,
     ai_difficulty: str,
@@ -214,6 +217,7 @@ def run_ai_move_background(
     except Exception as e:
         # Log error but don't raise (background task)
         import logging
+
         logging.error(f"AI move failed: {e}")
     finally:
         db.close()
