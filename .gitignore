@@ -18,3 +18,9 @@ venv/
 .coverage
 
 .idea
+
+# Python packaging
+*.egg-info/
+tictactoe_backend.egg-info/
+build/
+dist/
