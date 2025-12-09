@@ -17,6 +17,7 @@ variables:
 
 # Cache pip packages for faster builds
 cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
     paths:
       - .cache/pip
 #      - venv/
@@ -29,8 +30,6 @@ cache:
     - pip install --upgrade pip
     - pip install -r requirements.txt
 
-# Test Stage
-
 # Quality Gates
 lint:
   <<: *python_setup
@@ -38,13 +37,14 @@ lint:
   image: python:3.12-slim
   script:
     - echo "Running code quality checks..."
-    - black --check --diff baseAI/ tests/
-    - flake8 baseAI/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+    - pip install black flake8  # Ensure linters are available
+    - black --check --diff app/ tests/
+    - flake8 app/ tests/ --max-line-length=120 --extend-ignore=E203,W503
     - echo "Linting passed"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  allow_failure: false # Tests must pass
+  allow_failure: false
 
 # Run Tests
 test:
@@ -53,7 +53,8 @@ test:
   image: python:3.12-slim
   script:
     - echo "Running unit tests..."
-    - python -m pytest tests/ -v --tb=short --cov=baseAI --cov-report=term --cov-report=html --cov-report=xml
+    - pip install pytest pytest-cov  # Ensure test tools are installed
+    - python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=html --cov-report=xml
     - echo "Tests passed"
   artifacts:
     when: always
@@ -65,11 +66,12 @@ test:
         coverage_format: cobertura
         path: coverage.xml
     expire_in: 30 days
-  coverage: '/TOTAL.*\s+(\d+%)$/'
+  coverage: '/TOTAL.+?(\d+%)$/'
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  allow_failure: false  # Tests must pass
+  allow_failure: false
+
 
 # build Stage
 
