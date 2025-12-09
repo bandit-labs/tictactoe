@@ -3,6 +3,7 @@ Application Layer Mappers
 Converts between domain entities and DTOs
 Keeps domain layer isolated from presentation concerns
 """
+
 from typing import List
 
 from app.domain import Game
@@ -20,8 +21,7 @@ class GameMapper:
         Convert Game entity to GameResponse DTO
         """
         board_list: List[List[str]] = [
-            [cell.value for cell in row]
-            for row in game.board.cells
+            [cell.value for cell in row] for row in game.board.cells
         ]
 
         return GameResponse(

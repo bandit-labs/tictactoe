@@ -3,6 +3,7 @@ Platform Service Implementation
 Concrete implementation of IPlatformService interface
 Communicates with platform backend via HTTP
 """
+
 import logging
 from typing import List, Dict, Any
 import requests
