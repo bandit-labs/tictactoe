@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import List
 from sqlalchemy.orm import Session
-from app.core.config import settings
 from app.domain.models import Mark, GameStatus
 from app.domain.logic import apply_move, heuristic_value
 from app.infra.orm_models import Game, MoveLog

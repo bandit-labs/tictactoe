@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple
 
 class Mark(str, Enum):
     X = "X"
-    O = "O"
+    O = "O"  # noqa: E741
     EMPTY = " "
 
 

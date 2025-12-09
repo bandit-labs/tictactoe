@@ -1,5 +1,4 @@
 # tests/test_state_serializer.py
-import pytest
 from datetime import datetime
 from app.domain.models import GameState, Mark, GameStatus
 from app.infra.orm_models import Game, MoveLog
@@ -264,20 +263,7 @@ def test_build_rich_state_finished_win():
 def test_build_rich_state_finished_draw():
     """Test building a rich state dictionary for a finished game (draw).
     Legal moves are calculated based on empty board cells, regardless of status."""
-    game = Game(
-        id="game_789",
-        player_x_id="px",
-        player_o_id="po",
-        player_x_name="X",
-        player_o_name="O",
-        mode="pvp",
-        board_state="XOXOXO.OX",
-        status=GameStatus.DRAW,
-        next_player=Mark.O,
-        move_count=9,
-        created_at=datetime(2023, 5, 17, 12, 0, 0),
-        finished_at=datetime(2023, 5, 17, 12, 0, 40),
-    )
+
     # The domain state object reflects the final board state after the draw move,
     # even though the game status is finished.
     # Let's use the board string "XOXOXOXOX" for a full draw in the ORM object.

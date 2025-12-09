@@ -1,6 +1,6 @@
 # tests/test_logic.py
 import pytest
-from app.domain.models import GameState, Mark, GameStatus, Position
+from app.domain.models import GameState, Mark, GameStatus
 from app.domain.logic import (
     legal_moves,
     apply_move,

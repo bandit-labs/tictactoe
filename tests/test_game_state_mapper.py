@@ -1,5 +1,4 @@
 # tests/test_game_state_mapper.py
-import pytest
 from app.domain.models import GameState, Mark, GameStatus
 from app.infra.orm_models import Game
 from app.services import game_state_mapper

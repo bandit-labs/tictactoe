@@ -1,10 +1,7 @@
 # tests/test_game_service.py
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from sqlalchemy.orm import Session
-from pydantic import ValidationError  # Import ValidationError
+from unittest.mock import Mock, patch
 from app.domain.models import GameState, Mark, GameStatus
-from app.domain.logic import board_to_string
 from app.infra.orm_models import Game, MoveLog
 from app.schemas.game import GameCreate
 from app.schemas.move import MoveCreate
