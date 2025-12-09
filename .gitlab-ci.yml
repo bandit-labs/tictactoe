@@ -1,0 +1,101 @@
+# GitLab CI/CD Pipeline for TicTacToe Backend
+  # Workflow:
+  #   - Push to any branch: test + build
+  #   - Merge Request: test + build (validation)
+  #   - Merged to main: test + build + publish to registry
+
+stages:
+    - test
+    - build
+
+# Global variables
+variables:
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE/backend-tictactoe
+  DOCKER_DRIVER: overlay2
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+
+# Cache pip packages for faster builds
+cache:
+    paths:
+      - .cache/pip
+#      - venv/
+
+# YAML anchor for common Python setup
+.python_setup: &python_setup
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+# Test Stage
+
+# Quality Gates
+lint:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running code quality checks..."
+    - black --check --diff baseAI/ tests/
+    - flake8 baseAI/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+    - echo "Linting passed"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: false # Tests must pass
+
+# Run Tests
+test:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running unit tests..."
+    - python -m pytest tests/ -v --tb=short --cov=baseAI --cov-report=term --cov-report=html --cov-report=xml
+    - echo "Tests passed"
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - coverage.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 30 days
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: false  # Tests must pass
+
+# build Stage
+
+build:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - echo "Building Docker image..."
+    - docker build -t $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - echo "Saving image to tar file for reuse..."
+    - docker save $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA -o image.tar
+    - echo "Docker build completed ✓"
+    - echo "Image tagged as:"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+  after_script:
+    - docker image prune -af --filter "until=24h" || true
+  artifacts:
+    paths:
+      - image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  dependencies:
+    - test  # Only run if tests pass
