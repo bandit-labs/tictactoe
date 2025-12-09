@@ -3,7 +3,6 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase, scoped_session
 
 from app.core.config import settings
 
-
 class Base(DeclarativeBase):
     pass
 
