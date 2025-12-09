@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, Literal
 
-from app.domain.models import GameStatus, Mark
+from app.domain import GameStatus, Mark
 
 
 class GameCreate(BaseModel):
