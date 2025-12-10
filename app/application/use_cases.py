@@ -5,6 +5,7 @@ Each use case represents a single user action/intent
 Follows Single Responsibility Principle
 """
 
+import logging
 from typing import Optional
 
 from app.domain import (
@@ -24,6 +25,8 @@ from .dtos import (
     PlayMoveCommand,
     GetGameQuery,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CreateGameUseCase:
@@ -185,7 +188,12 @@ class PlayMoveUseCase:
                     final_state=state_after,
                     history=history,
                 )
-        except Exception:
+        except Exception as e:
+            # Log the error message and traceback
+            logger.error(
+                "Platform logging failed (gameplay unaffected): %s", e, exc_info=True
+            )
+
             # Don't break gameplay if platform logging fails
             pass
 
