@@ -9,12 +9,8 @@ def test_calculate_winner_row():
 
 
 def test_calculate_winner_col():
-    board = Board.from_string("XOX O  O ")
-    # Col 0: X, O, (empty) → not win
-    # Col 1: X, O, O → not win
-    # Col 2: X, (empty), (empty) → X wins col 0? No.
-    # Let's use clearer: "XOXOXOXXO" → X wins col 0 and 2
-    board = Board.from_string("XOXOXOXXO")  # X O X / O X O / X X O → X wins col 0
+    # Let's use a clear board: X.OXO.X.O
+    board = Board.from_string("X OXO X O")  # "X.O/XO./X.O" → X wins col 0
     assert GameRules.calculate_winner(board) == Mark.X
 
 
