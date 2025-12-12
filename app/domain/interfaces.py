@@ -3,6 +3,7 @@ Domain Interfaces (Ports) - Abstractions for external dependencies
 Following Hexagonal Architecture / Ports & Adapters pattern
 Domain depends on these abstractions, not on concrete implementations
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routes_games import router as games_router
 from app.core.db import Base, engine
+from app.core.db import ensure_schema_exists
 
 # dev-time schema creation; later replace with Alembic migrations
 Base.metadata.create_all(bind=engine)
@@ -13,6 +14,12 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+
+@app.on_event("startup")
+def startup_event():
+    ensure_schema_exists()
+
 
 # allow frontend during dev
 app.add_middleware(

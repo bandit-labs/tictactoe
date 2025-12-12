@@ -3,6 +3,7 @@ Dependency Injection Container
 Wires together all layers following Dependency Inversion Principle
 FastAPI dependencies for clean dependency injection
 """
+
 from functools import lru_cache
 from sqlalchemy.orm import Session
 
@@ -34,6 +35,7 @@ from app.application import (
 
 
 # Infrastructure Dependencies
+
 
 @lru_cache()
 def get_ai_service() -> IAIService:
@@ -67,6 +69,7 @@ def get_game_repository(db: Session) -> IGameRepository:
 
 
 # Use Case Dependencies
+
 
 def get_create_game_use_case(
     repository: IGameRepository,

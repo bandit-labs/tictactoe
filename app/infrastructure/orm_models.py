@@ -17,9 +17,11 @@ from app.domain import GameStatus, Mark
 
 SCHEMA = settings.db_schema
 
+
 class GameMode(str, PyEnum):
     PVAI = "pvai"
     PVP = "pvp"
+
 
 class Game(Base):
     __tablename__ = "games"
@@ -40,7 +42,9 @@ class Game(Base):
     next_player: Mapped[Mark] = mapped_column(Enum(Mark), nullable=False)
     move_count: Mapped[int] = mapped_column(Integer, default=0)
     mode: Mapped[str] = mapped_column(String, nullable=False, default="pvai")
-    ai_difficulty: Mapped[str | None] = mapped_column(String, nullable=True, default="medium")
+    ai_difficulty: Mapped[str | None] = mapped_column(
+        String, nullable=True, default="medium"
+    )
 
     # serialized 3x3 board as 9-char string
     board_state: Mapped[str] = mapped_column(String(9), nullable=False)

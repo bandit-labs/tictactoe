@@ -1,0 +1,164 @@
+# GitLab CI/CD Pipeline for TicTacToe Backend
+  # Workflow:
+  #   - Push to any branch: test + build
+  #   - Merge Request: test + build (validation)
+  #   - Merged to main: test + build + publish to registry
+
+stages:
+    - test
+    - build
+    - publish
+
+# Global variables
+variables:
+  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE/backend-tictactoe
+  DOCKER_DRIVER: overlay2
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+
+# Cache pip packages for faster builds
+cache:
+    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/pip
+#      - venv/
+
+# YAML anchor for common Python setup
+.python_setup: &python_setup
+  before_script:
+    - python -m venv venv
+    - source venv/bin/activate
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+
+# Quality Gates
+lint-check:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running code quality checks..."
+    - pip install black flake8  # Ensure linters are available
+    - black --check --diff app/ tests/
+    - flake8 app/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+    - echo "Linting passed"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: false
+
+
+# Security Check
+security-scan:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running security scan..."
+    - pip install bandit  # Install bandit
+    - bandit -r app/ -f json -o bandit-report.json || true
+    - bandit -r app/ -ll || true
+    - echo "Security scan completed"
+  artifacts:
+    when: always
+    paths:
+      - bandit-report.json
+    expire_in: 30 days
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: true  # Warning only
+
+
+# Run Tests
+test-job:
+  <<: *python_setup
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Running unit tests..."
+    - pip install pytest pytest-cov  # Ensure test tools are installed
+    - python -m pytest tests/ -v --tb=short --cov=app --cov-report=term --cov-report=html --cov-report=xml
+    - echo "Tests passed"
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - coverage.xml
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    expire_in: 30 days
+  coverage: '/TOTAL.+?(\d+%)$/'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  allow_failure: false
+
+
+# Build Stage
+build-job:
+  stage: build
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+  script:
+    - echo "Building Docker image..."
+    - docker build -t $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA .
+    - echo "Saving image to tar file for reuse..."
+    - docker save $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA -o image.tar
+    - echo "Docker build completed"
+    - echo "Image tagged as:"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+  after_script:
+    - docker image prune -af --filter "until=24h" || true
+  artifacts:
+    paths:
+      - image.tar
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  dependencies:
+    - test-job  # Only run if tests pass
+
+
+# Publish stage
+publish-job:
+  stage: publish
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - echo "Loading Docker image from artifact..."
+    - docker load -i image.tar
+    - echo "Tagging and publishing Docker image to registry..."
+    - docker tag $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG
+    - docker tag $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA $DOCKER_IMAGE_NAME:latest
+    - docker push $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG
+    - docker push $DOCKER_IMAGE_NAME:latest
+    - echo "Published to registry successfully!"
+    - echo ""
+    - echo "Available tags:"
+    - echo "  - $DOCKER_IMAGE_NAME:latest"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - echo "  - $DOCKER_IMAGE_NAME:$CI_COMMIT_REF_SLUG"
+    - echo ""
+    - 'echo "Pull with: docker pull $DOCKER_IMAGE_NAME:latest"'
+  after_script:
+    - docker logout $CI_REGISTRY || true
+    - docker image prune -af --filter "until=24h" || true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+  dependencies:
+    - build-job
+  environment:
+    name: production
+    url: $CI_REGISTRY_IMAGE/backend-tictactoe

@@ -3,3 +3,24 @@ __pycache__/
 .venv/
 .idea/
 .DS_Store
+
+# CI/CD artifacts
+htmlcov/
+coverage.xml
+bandit-report.json
+.cache/
+
+# Python
+*.py[cod]
+*$py.class
+venv/
+.pytest_cache/
+.coverage
+
+.idea
+
+# Python packaging
+*.egg-info/
+tictactoe_backend.egg-info/
+build/
+dist/

@@ -4,6 +4,8 @@ Orchestrates domain objects and coordinates with infrastructure
 Each use case represents a single user action/intent
 Follows Single Responsibility Principle
 """
+
+import logging
 from typing import Optional
 
 from app.domain import (
@@ -22,8 +24,9 @@ from .dtos import (
     CreateGameCommand,
     PlayMoveCommand,
     GetGameQuery,
-    GameResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CreateGameUseCase:
@@ -120,9 +123,7 @@ class PlayMoveUseCase:
             raise ValueError("Game not found")
 
         # Determine if this is an AI move
-        is_ai_move = game.is_ai_turn() and (
-            command.row is None or command.col is None
-        )
+        is_ai_move = game.is_ai_turn() and (command.row is None or command.col is None)
 
         # Calculate position
         if is_ai_move:
@@ -150,8 +151,10 @@ class PlayMoveUseCase:
         state_before = self.state_serializer.serialize_game_state(game)
 
         # Play the move (domain logic)
-        player_id = PlayerId(command.player_id) if not is_ai_move else PlayerId(
-            PlayerFactory.create_ai_player_id()
+        player_id = (
+            PlayerId(command.player_id)
+            if not is_ai_move
+            else PlayerId(PlayerFactory.create_ai_player_id())
         )
         move = game.play_move(position, player_id)
 
@@ -185,7 +188,12 @@ class PlayMoveUseCase:
                     final_state=state_after,
                     history=history,
                 )
-        except Exception:
+        except Exception as e:
+            # Log the error message and traceback
+            logger.error(
+                "Platform logging failed (gameplay unaffected): %s", e, exc_info=True
+            )
+
             # Don't break gameplay if platform logging fails
             pass
 

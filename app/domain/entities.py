@@ -2,6 +2,7 @@
 Domain Entities - Rich domain models with identity and behavior
 Following DDD principles for entities
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -25,6 +26,7 @@ class Player:
     """
     Represents a player in the game
     """
+
     id: PlayerId
     name: str
     mark: Mark
@@ -40,6 +42,7 @@ class Move:
     Represents a single move in the game
     Entity with behavior and validation
     """
+
     position: Position
     mark: Mark
     player_id: PlayerId
@@ -58,6 +61,7 @@ class Game:
     Rich domain entity representing a Tic-Tac-Toe game
     Contains business logic and enforces invariants
     """
+
     id: str
     player_x: Player
     player_o: Player
@@ -86,16 +90,8 @@ class Game:
         Enforces business rules for game creation
         """
         # Create players
-        player_x = Player(
-            id=PlayerId(player_x_id),
-            name=player_x_name,
-            mark=Mark.X
-        )
-        player_o = Player(
-            id=PlayerId(player_o_id),
-            name=player_o_name,
-            mark=Mark.O
-        )
+        player_x = Player(id=PlayerId(player_x_id), name=player_x_name, mark=Mark.X)
+        player_o = Player(id=PlayerId(player_o_id), name=player_o_name, mark=Mark.O)
 
         # Validate mode
         if mode == GameMode.PVAI and not player_o.is_ai():

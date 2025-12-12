@@ -3,6 +3,7 @@ Repository Implementations
 Concrete implementations of domain repository interfaces
 Handles persistence using SQLAlchemy
 """
+
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -45,7 +46,9 @@ class SQLAlchemyGameRepository(IGameRepository):
 
         # Import here to avoid circular dependency
         from .mappers import MoveORMMapper
-        from app.infrastructure.services.game_state_serializer import GameStateSerializer
+        from app.infrastructure.services.game_state_serializer import (
+            GameStateSerializer,
+        )
 
         serializer = GameStateSerializer()
 
@@ -59,7 +62,7 @@ class SQLAlchemyGameRepository(IGameRepository):
                     move=move,
                     game_id=game.id,
                     state_before=state_dict,  # Simplified
-                    state_after=state_dict,   # Simplified
+                    state_after=state_dict,  # Simplified
                 )
                 self.db_session.add(orm_move)
 
