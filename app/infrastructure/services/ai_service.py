@@ -3,6 +3,7 @@ AI Service Implementation
 Concrete implementation of IAIService interface
 Communicates with external AI service via HTTP
 """
+
 from typing import Dict, Any
 import requests
 
@@ -40,15 +41,14 @@ class HttpAIService(IAIService):
         """
         # Convert board to AI service format
         board_payload = [
-            [
-                None if cell == Mark.EMPTY else cell.value
-                for cell in row
-            ]
+            [None if cell == Mark.EMPTY else cell.value for cell in row]
             for row in board.cells
         ]
 
         # Get difficulty value (handle both enum and string gracefully)
-        difficulty_value = difficulty.value if isinstance(difficulty, AIDifficulty) else difficulty
+        difficulty_value = (
+            difficulty.value if isinstance(difficulty, AIDifficulty) else difficulty
+        )
 
         # Build request payload
         payload: Dict[str, Any] = {

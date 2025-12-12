@@ -2,6 +2,7 @@
 Domain Value Objects - Immutable objects defined by their attributes
 Following DDD principles for value objects
 """
+
 from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
@@ -10,8 +11,9 @@ from typing import List
 
 class Mark(str, Enum):
     """Represents a mark on the board"""
+
     X = "X"
-    O = "O"
+    O = "O"  # noqa: E741
     EMPTY = " "
 
     def opposite(self) -> Mark:
@@ -25,6 +27,7 @@ class Mark(str, Enum):
 
 class GameStatus(str, Enum):
     """Represents the current status of a game"""
+
     IN_PROGRESS = "IN_PROGRESS"
     DRAW = "DRAW"
     X_WON = "X_WON"
@@ -37,12 +40,14 @@ class GameStatus(str, Enum):
 
 class GameMode(str, Enum):
     """Represents the game mode"""
+
     PVP = "pvp"
     PVAI = "pvai"
 
 
 class AIDifficulty(str, Enum):
     """AI difficulty levels"""
+
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
@@ -51,6 +56,7 @@ class AIDifficulty(str, Enum):
 @dataclass(frozen=True)
 class Position:
     """Represents a position on the board (immutable)"""
+
     row: int
     col: int
 
@@ -73,6 +79,7 @@ class Position:
 @dataclass(frozen=True)
 class PlayerId:
     """Represents a player identifier (value object)"""
+
     value: str
 
     def __post_init__(self):
@@ -90,7 +97,10 @@ class Board:
     Represents the game board (immutable)
     Encapsulates board logic and provides rich behavior
     """
-    cells: tuple[tuple[Mark, Mark, Mark], tuple[Mark, Mark, Mark], tuple[Mark, Mark, Mark]]
+
+    cells: tuple[
+        tuple[Mark, Mark, Mark], tuple[Mark, Mark, Mark], tuple[Mark, Mark, Mark]
+    ]
 
     @classmethod
     def empty(cls) -> Board:
@@ -103,30 +113,19 @@ class Board:
         """Create board from 2D list"""
         if len(board) != 3 or any(len(row) != 3 for row in board):
             raise ValueError("Board must be 3x3")
-        return cls(cells=(
-            tuple(board[0]),
-            tuple(board[1]),
-            tuple(board[2])
-        ))
+        return cls(cells=(tuple(board[0]), tuple(board[1]), tuple(board[2])))
 
     @classmethod
     def from_string(cls, s: str) -> Board:
         """Create board from 9-character string"""
         if len(s) != 9:
             raise ValueError("Board string must be length 9")
-        cells = [
-            [Mark(s[r * 3 + c]) for c in range(3)]
-            for r in range(3)
-        ]
+        cells = [[Mark(s[r * 3 + c]) for c in range(3)] for r in range(3)]
         return cls.from_list(cells)
 
     def to_string(self) -> str:
         """Convert board to string representation"""
-        return "".join(
-            cell.value
-            for row in self.cells
-            for cell in row
-        )
+        return "".join(cell.value for row in self.cells for cell in row)
 
     def to_list(self) -> List[List[Mark]]:
         """Convert to 2D list"""

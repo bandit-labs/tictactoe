@@ -2,6 +2,7 @@
 Domain Services - Business logic that doesn't belong to a single entity
 Stateless services that operate on domain objects
 """
+
 from __future__ import annotations
 from typing import List, Optional
 

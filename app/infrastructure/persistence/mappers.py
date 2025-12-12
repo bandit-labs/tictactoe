@@ -3,6 +3,7 @@ Infrastructure Mappers
 Converts between domain entities and ORM models
 Isolates domain from persistence concerns
 """
+
 from typing import List
 
 from app.domain import (
@@ -43,7 +44,9 @@ class GameORMMapper:
         orm_game.next_player = game.next_player
         orm_game.move_count = game.move_count
         orm_game.mode = game.mode.value
-        orm_game.ai_difficulty = game.ai_difficulty.value if game.ai_difficulty else None
+        orm_game.ai_difficulty = (
+            game.ai_difficulty.value if game.ai_difficulty else None
+        )
         orm_game.board_state = game.board.to_string()
         orm_game.created_at = game.created_at
         orm_game.finished_at = game.finished_at

@@ -302,6 +302,64 @@ The application includes comprehensive error handling at each layer.
 The application includes structured logging at key integration points for debugging and monitoring. Use cases log difficulty settings and player actions. Infrastructure services log external API calls with parameters.
 
 
+---
+
+## CI/CD Pipeline
+This project uses GitLab CI/CD for automated testing, building, and deployment (dockerization).
+
+### Pipeline Stages
+1. Test - Runs on all pushes and MRs
+   - Code linting (Black, Flake8)
+   - Unit tests with coverage
+   - Security scanning (Bandit)
+2. Build - Runs on all pushes and MRs
+   - Docker image build
+   - Image validation
+3. Publish - Runs only when merged to **main**
+   - Push to ``GitLab Container Registry``
+   - Tagged as **latest**, **main** and **commit SHA**
+
+### Quality Gates
+- Code formatting must pass (Black)
+- Linting must pass (Flake8)
+- All unit tests must pass
+- Security scan warnings (non-blocking)
+
+### Deployment
+Images are automatically published to GitLab Container Registry when merged to main:
+```
+docker pull <your-registry>/backend-tictactoe:latest 
+docker run -p 8001:8001 <your-registry>/backend-tictactoe:latest
+```
+
+### Development
+
+#### Code Quality Tools
+
+Before committing, run these checks:
+
+1. Install development dependencies:
+```bash
+  pip install -r requirements.txt
+```
+
+2. Format your code with Black:
+```bash
+  black app/ tests/
+```
+
+3. Check formatting without modifying files:
+```bash
+  black --check app/ tests/
+```
+
+4. Check linting with Flake8:
+```bash
+  flake8 app/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+```
+
+---
+
 ## License
 
 This project is part of the Bandit Games project.

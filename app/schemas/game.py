@@ -11,6 +11,7 @@ class GameCreate(BaseModel):
     - For PvAI only player_x_id is required
     - For PvP both player_x_id and player_o_id are required
     """
+
     player_x_id: str
     player_o_id: Optional[str] = None
     mode: Literal["pvai", "pvp"]
