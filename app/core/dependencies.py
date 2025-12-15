@@ -21,8 +21,8 @@ from app.domain import (
 from app.infrastructure import (
     SQLAlchemyGameRepository,
     HttpAIService,
-    HttpPlatformService,
     GameStateSerializer,
+    MessagingPlatformService,
 )
 
 # Application use cases
@@ -50,7 +50,7 @@ def get_platform_service() -> IPlatformService:
     """
     Get platform service instance (singleton)
     """
-    return HttpPlatformService(base_url=settings.platform_backend_url)
+    return MessagingPlatformService(base_url=settings.platform_backend_url)
 
 
 @lru_cache()
