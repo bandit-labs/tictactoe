@@ -24,3 +24,7 @@ venv/
 tictactoe_backend.egg-info/
 build/
 dist/
+.devcontainer
+.temp
+.env
+.vscode

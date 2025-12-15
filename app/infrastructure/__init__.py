@@ -14,6 +14,7 @@ from .services import (
     HttpAIService,
     HttpPlatformService,
     GameStateSerializer,
+    MessagingPlatformService,
 )
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "HttpAIService",
     "HttpPlatformService",
     "GameStateSerializer",
+    "MessagingPlatformService",
 ]

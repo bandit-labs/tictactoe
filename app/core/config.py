@@ -28,6 +28,12 @@ class Settings(BaseSettings):
         description="Base URL of the main Platform backend for logging",
     )
 
+    # RabbitMQ
+    rabbitmq_user: str = "user"
+    rabbitmq_password: str = "password"
+    rabbitmq_host: str = "localhost"
+    rabbitmq_port: int = 5672
+
     class Config:
         env_file = ".env"
 
