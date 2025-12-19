@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1 import routes_selfplay, routes_datasets
 from app.api.v1.routes_games import router as games_router
 from app.core.db import Base, engine
 from app.core.db import ensure_schema_exists
@@ -34,5 +35,8 @@ app.add_middleware(
 
 app.include_router(games_router)
 
+app.include_router(routes_selfplay.router, prefix="/api/v1")
+
+app.include_router(routes_datasets.router, prefix="/api/v1")
 
 # uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

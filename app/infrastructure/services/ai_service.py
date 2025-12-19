@@ -65,7 +65,7 @@ class HttpAIService(IAIService):
             response = requests.post(
                 f"{self.base_url}/api/ai/move",
                 json=payload,
-                timeout=5,
+                timeout=30,
             )
             response.raise_for_status()
             data = response.json()
