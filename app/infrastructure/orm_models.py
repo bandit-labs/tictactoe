@@ -31,6 +31,7 @@ Schema: Uses settings.db_schema (e.g., "public")
 See also: app/application/analytics_models.py for analytical/reporting models
 """
 
+
 class GameMode(str, PyEnum):
     PVAI = "pvai"
     PVP = "pvp"
