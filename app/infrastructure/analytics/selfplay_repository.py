@@ -2,6 +2,7 @@
 Self-Play Repository
 Writes AI vs AI games ONLY to analytics tables (bypasses operational tables)
 """
+
 from typing import Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -29,7 +30,7 @@ class SelfPlayAnalyticsRepository:
         player_o_name: str,
         mode: str,
         ai_difficulty: str,
-        created_at: datetime
+        created_at: datetime,
     ) -> None:
         """Initialize game tracking (in-memory, written on first move)"""
         self._current_game_id = game_id
@@ -44,7 +45,7 @@ class SelfPlayAnalyticsRepository:
             "status": "in_progress",
             "move_count": 0,
             "created_at": created_at,
-            "finished_at": None
+            "finished_at": None,
         }
 
     def log_move(
@@ -59,14 +60,16 @@ class SelfPlayAnalyticsRepository:
         state_after: Dict[str, Any],
         heuristic_value: float,
         ai_metadata: Dict[str, Any],
-        created_at: datetime
+        created_at: datetime,
     ) -> None:
         """Log move to analytics table"""
 
         # Ensure game exists in analytics
-        game_analytics = self.db.query(GameAnalytics).filter(
-            GameAnalytics.game_id == game_id
-        ).first()
+        game_analytics = (
+            self.db.query(GameAnalytics)
+            .filter(GameAnalytics.game_id == game_id)
+            .first()
+        )
 
         if not game_analytics:
             # First move - create game record
@@ -86,22 +89,20 @@ class SelfPlayAnalyticsRepository:
             state_after=state_after,
             heuristic_value=heuristic_value,
             ai_metadata=ai_metadata,
-            created_at=created_at
+            created_at=created_at,
         )
         self.db.add(move)
         self.db.commit()
 
     def finish_game(
-        self,
-        game_id: str,
-        status: str,
-        move_count: int,
-        finished_at: datetime
+        self, game_id: str, status: str, move_count: int, finished_at: datetime
     ) -> None:
         """Update game with final status"""
-        game_analytics = self.db.query(GameAnalytics).filter(
-            GameAnalytics.game_id == game_id
-        ).first()
+        game_analytics = (
+            self.db.query(GameAnalytics)
+            .filter(GameAnalytics.game_id == game_id)
+            .first()
+        )
 
         if game_analytics:
             game_analytics.status = status

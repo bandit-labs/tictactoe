@@ -2,6 +2,7 @@
 ML Dataset Export Service
 Exports analytics data in format ready for ML training
 """
+
 import os
 from typing import Optional, Dict, Any
 import pandas as pd
@@ -16,8 +17,8 @@ def _extract_board_string(state_json: Dict) -> str:
     Extract 9-character board string from state JSON
     Format: "XXO......" where . = empty
     """
-    if 'board' in state_json:
-        board = state_json['board']
+    if "board" in state_json:
+        board = state_json["board"]
         if isinstance(board, str) and len(board) == 9:
             return board
         elif isinstance(board, list):
@@ -25,12 +26,12 @@ def _extract_board_string(state_json: Dict) -> str:
             flat = []
             for row in board:
                 for cell in row:
-                    if cell is None or cell == 'EMPTY':
-                        flat.append('.')
+                    if cell is None or cell == "EMPTY":
+                        flat.append(".")
                     else:
                         flat.append(cell)
-            return ''.join(flat)
-    return '.' * 9  # Empty board fallback
+            return "".join(flat)
+    return "." * 9  # Empty board fallback
 
 
 def _calculate_legal_moves(board_str: str) -> str:
@@ -38,18 +39,18 @@ def _calculate_legal_moves(board_str: str) -> str:
     Calculate legal moves mask from board string
     Returns: 9-char binary string, e.g., "101010101"
     """
-    return ''.join('1' if c == '.' else '0' for c in board_str)
+    return "".join("1" if c == "." else "0" for c in board_str)
 
 
 def _map_outcome(status: str) -> str:
     """Map GameAnalytics status to standard outcome"""
     status_lower = status.lower()
-    if 'x' in status_lower and 'win' in status_lower:
-        return 'X_win'
-    elif 'o' in status_lower and 'win' in status_lower:
-        return 'O_win'
+    if "x" in status_lower and "win" in status_lower:
+        return "X_win"
+    elif "o" in status_lower and "win" in status_lower:
+        return "O_win"
     else:
-        return 'draw'
+        return "draw"
 
 
 def _outcome_from_perspective(outcome: str, player_mark: str) -> int:
@@ -57,10 +58,11 @@ def _outcome_from_perspective(outcome: str, player_mark: str) -> int:
     Get outcome value from player's perspective
     1 = win, 0 = draw, -1 = loss
     """
-    if outcome == 'draw':
+    if outcome == "draw":
         return 0
-    elif (outcome == 'X_win' and player_mark == 'X') or \
-         (outcome == 'O_win' and player_mark == 'O'):
+    elif (outcome == "X_win" and player_mark == "X") or (
+        outcome == "O_win" and player_mark == "O"
+    ):
         return 1
     else:
         return -1
@@ -84,7 +86,7 @@ class MLDatasetExportService:
         max_games: Optional[int] = None,
         min_date: Optional[datetime] = None,
         max_date: Optional[datetime] = None,
-        mode_filter: Optional[str] = None
+        mode_filter: Optional[str] = None,
     ) -> pd.DataFrame:
         """
         Export analytics to pandas DataFrame with ML-ready schema
@@ -108,27 +110,30 @@ class MLDatasetExportService:
         """
 
         # Build query
-        query = self.db.query(
-            GameAnalytics.game_id,
-            GameAnalytics.mode,
-            GameAnalytics.ai_difficulty,
-            GameAnalytics.status,
-            GameAnalytics.move_count,
-            GameAnalytics.created_at,
-            MoveAnalytics.move_number,
-            MoveAnalytics.player_id,
-            MoveAnalytics.mark,
-            MoveAnalytics.row,
-            MoveAnalytics.col,
-            MoveAnalytics.state_before,
-            MoveAnalytics.state_after,
-            MoveAnalytics.heuristic_value,
-            MoveAnalytics.ai_metadata
-        ).join(
-            MoveAnalytics,
-            GameAnalytics.game_id == MoveAnalytics.game_id
-        ).filter(
-            GameAnalytics.status.in_(['X_win', 'O_win', 'draw'])  # Only completed games
+        query = (
+            self.db.query(
+                GameAnalytics.game_id,
+                GameAnalytics.mode,
+                GameAnalytics.ai_difficulty,
+                GameAnalytics.status,
+                GameAnalytics.move_count,
+                GameAnalytics.created_at,
+                MoveAnalytics.move_number,
+                MoveAnalytics.player_id,
+                MoveAnalytics.mark,
+                MoveAnalytics.row,
+                MoveAnalytics.col,
+                MoveAnalytics.state_before,
+                MoveAnalytics.state_after,
+                MoveAnalytics.heuristic_value,
+                MoveAnalytics.ai_metadata,
+            )
+            .join(MoveAnalytics, GameAnalytics.game_id == MoveAnalytics.game_id)
+            .filter(
+                GameAnalytics.status.in_(
+                    ["X_win", "O_win", "draw"]
+                )  # Only completed games
+            )
         )
 
         # Apply filters
@@ -144,9 +149,12 @@ class MLDatasetExportService:
         # Limit games if specified
         if max_games:
             # Get game IDs first, then filter
-            game_ids_query = self.db.query(GameAnalytics.game_id).filter(
-                GameAnalytics.status.in_(['X_win', 'O_win', 'draw'])
-            ).order_by(GameAnalytics.created_at).limit(max_games)
+            game_ids_query = (
+                self.db.query(GameAnalytics.game_id)
+                .filter(GameAnalytics.status.in_(["X_win", "O_win", "draw"]))
+                .order_by(GameAnalytics.created_at)
+                .limit(max_games)
+            )
             game_ids = [row[0] for row in game_ids_query]
             query = query.filter(GameAnalytics.game_id.in_(game_ids))
 
@@ -173,32 +181,28 @@ class MLDatasetExportService:
             moves_to_end = row.move_count - row.move_number
 
             record = {
-                'game_id': row.game_id,
-                'move_number': row.move_number,
-                'player_mark': row.mark,
-                'position_row': row.row,
-                'position_col': row.col,
-                'position_index': row.row * 3 + row.col,
-                'board_before': board_before,
-                'board_after': board_after,
-                'legal_moves_mask': legal_moves,
-                'ai_difficulty': row.ai_difficulty or 'unknown',
-                'heuristic_value': row.heuristic_value,
-                'game_outcome': outcome,
-                'outcome_from_perspective': outcome_value,
-                'moves_to_end': moves_to_end,
-                'ai_metadata': row.ai_metadata or {}
+                "game_id": row.game_id,
+                "move_number": row.move_number,
+                "player_mark": row.mark,
+                "position_row": row.row,
+                "position_col": row.col,
+                "position_index": row.row * 3 + row.col,
+                "board_before": board_before,
+                "board_after": board_after,
+                "legal_moves_mask": legal_moves,
+                "ai_difficulty": row.ai_difficulty or "unknown",
+                "heuristic_value": row.heuristic_value,
+                "game_outcome": outcome,
+                "outcome_from_perspective": outcome_value,
+                "moves_to_end": moves_to_end,
+                "ai_metadata": row.ai_metadata or {},
             }
             records.append(record)
 
         df = pd.DataFrame(records)
         return df
 
-    def export_to_parquet(
-        self,
-        output_path: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    def export_to_parquet(self, output_path: str, **kwargs) -> Dict[str, Any]:
         """
         Export to Parquet file
 
@@ -208,16 +212,16 @@ class MLDatasetExportService:
         df = self.export_to_dataframe(**kwargs)
 
         # Export to Parquet
-        df.to_parquet(output_path, index=False, engine='pyarrow')
+        df.to_parquet(output_path, index=False, engine="pyarrow")
 
         # Calculate statistics
         stats = {
-            'total_moves': len(df),
-            'total_games': df['game_id'].nunique(),
-            'outcomes': df.groupby('game_outcome').size().to_dict(),
-            'avg_moves_per_game': df.groupby('game_id')['move_number'].max().mean(),
-            'difficulties': df['ai_difficulty'].value_counts().to_dict(),
-            'file_size_mb': os.path.getsize(output_path) / (1024 * 1024)
+            "total_moves": len(df),
+            "total_games": df["game_id"].nunique(),
+            "outcomes": df.groupby("game_outcome").size().to_dict(),
+            "avg_moves_per_game": df.groupby("game_id")["move_number"].max().mean(),
+            "difficulties": df["ai_difficulty"].value_counts().to_dict(),
+            "file_size_mb": os.path.getsize(output_path) / (1024 * 1024),
         }
 
         return stats

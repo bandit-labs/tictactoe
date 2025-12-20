@@ -21,7 +21,7 @@ from app.domain import (
     IAIService,
     IPlatformService,
     IGameStateSerializer,
-    PlayerFactory, GameStatus, Mark,
+    PlayerFactory,
 )
 from .dtos import (
     CreateGameCommand,
@@ -246,6 +246,7 @@ class PlayAIMoveUseCase:
 
         return play_move_use_case.execute(command)
 
+
 class RunSelfPlayGameUseCase:
     """
     Orchestrates AI vs AI game for dataset generation
@@ -253,10 +254,10 @@ class RunSelfPlayGameUseCase:
     """
 
     def __init__(
-            self,
-            db: Session,  # Change from game_repository to db session
-            ai_service: IAIService,
-            state_serializer: IGameStateSerializer,
+        self,
+        db: Session,  # Change from game_repository to db session
+        ai_service: IAIService,
+        state_serializer: IGameStateSerializer,
     ):
         self.db = db
         self.ai_service = ai_service
@@ -266,7 +267,7 @@ class RunSelfPlayGameUseCase:
         self,
         difficulty_x: str = "medium",
         difficulty_o: str = "medium",
-        add_noise: bool = True
+        add_noise: bool = True,
     ) -> str | None:  # Returns game_id instead of Game entity
         """
         Run one complete AI vs AI game
@@ -287,13 +288,15 @@ class RunSelfPlayGameUseCase:
             player_o_name=f"AI-O-{difficulty_o}",
             mode="pvp",  # AI vs AI
             ai_difficulty=f"{difficulty_x}vs{difficulty_o}",
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
-        logger.info(f"Started self-play game {game_id} (X:{difficulty_x} vs O:{difficulty_o})")
+        logger.info(
+            f"Started self-play game {game_id} (X:{difficulty_x} vs O:{difficulty_o})"
+        )
 
         # Simulate game in-memory (no operational DB writes)
-        from app.domain.value_objects import Board, Mark, Position
+        from app.domain.value_objects import Board, Mark
         from app.domain.services import GameRules
 
         board = Board.empty()
@@ -303,7 +306,9 @@ class RunSelfPlayGameUseCase:
 
         while not game_over:
             # Determine difficulty
-            current_difficulty = difficulty_x if current_player == Mark.X else difficulty_o
+            current_difficulty = (
+                difficulty_x if current_player == Mark.X else difficulty_o
+            )
 
             # Add noise
             if add_noise and random.random() < 0.15:
@@ -316,13 +321,13 @@ class RunSelfPlayGameUseCase:
             position, evaluation, metadata = self.ai_service.calculate_move(
                 board=board,
                 current_player=current_player,
-                difficulty=AIDifficulty(current_difficulty)
+                difficulty=AIDifficulty(current_difficulty),
             )
 
             # Capture state before
             state_before = {
                 "board": board.to_string(),
-                "next_player": current_player.value
+                "next_player": current_player.value,
             }
 
             # Apply move
@@ -331,12 +336,12 @@ class RunSelfPlayGameUseCase:
             # Capture state after
             state_after = {
                 "board": board.to_string(),
-                "next_player": current_player.opposite().value
+                "next_player": current_player.opposite().value,
             }
 
             # Check if game over
             winner = GameRules.calculate_winner(board)
-            is_draw = (move_number >= 9 and winner is None)
+            is_draw = move_number >= 9 and winner is None
             game_over = (winner is not None) or is_draw
 
             # Calculate heuristic
@@ -353,7 +358,9 @@ class RunSelfPlayGameUseCase:
             repo.log_move(
                 game_id=game_id,
                 move_number=move_number,
-                player_id="ai-selfplay-x" if current_player == Mark.X else "ai-selfplay-o",
+                player_id=(
+                    "ai-selfplay-x" if current_player == Mark.X else "ai-selfplay-o"
+                ),
                 mark=current_player.value,
                 row=position.row,
                 col=position.col,
@@ -361,7 +368,7 @@ class RunSelfPlayGameUseCase:
                 state_after=state_after,
                 heuristic_value=heuristic,
                 ai_metadata=metadata,
-                created_at=datetime.utcnow()
+                created_at=datetime.utcnow(),
             )
 
             # Switch player
@@ -380,11 +387,14 @@ class RunSelfPlayGameUseCase:
             game_id=game_id,
             status=final_status,
             move_count=move_number - 1,
-            finished_at=datetime.utcnow()
+            finished_at=datetime.utcnow(),
         )
 
-        logger.info(f"Completed game {game_id}: {final_status} in {move_number - 1} moves")
+        logger.info(
+            f"Completed game {game_id}: {final_status} in {move_number - 1} moves"
+        )
         return game_id
+
 
 class RunBatchSelfPlayUseCase:
     """
@@ -401,22 +411,22 @@ class RunBatchSelfPlayUseCase:
         difficulty_o: str = "medium",
         add_noise: bool = True,
         alternate_starting_player: bool = True,
-        progress_callback: Optional[Callable[[int, int], None]] = None
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> List[str]:
         """
-                Run multiple self-play games
+        Run multiple self-play games
 
-                Args:
-                    num_games: Number of games to play
-                    difficulty_x: Base difficulty for X
-                    difficulty_o: Base difficulty for O
-                    add_noise: Add randomness for variety
-                    alternate_starting_player: Swap X/O difficulties each game
-                    progress_callback: Optional callback(current, total)
+        Args:
+            num_games: Number of games to play
+            difficulty_x: Base difficulty for X
+            difficulty_o: Base difficulty for O
+            add_noise: Add randomness for variety
+            alternate_starting_player: Swap X/O difficulties each game
+            progress_callback: Optional callback(current, total)
 
-                Returns:
-                    List of completed game IDs
-                """
+        Returns:
+            List of completed game IDs
+        """
         game_ids = []
 
         for i in range(num_games):
@@ -428,9 +438,7 @@ class RunBatchSelfPlayUseCase:
 
             try:
                 game_id = self.single_game_use_case.execute(
-                    difficulty_x=diff_x,
-                    difficulty_o=diff_o,
-                    add_noise=add_noise
+                    difficulty_x=diff_x, difficulty_o=diff_o, add_noise=add_noise
                 )
                 game_ids.append(game_id)
 
@@ -441,5 +449,7 @@ class RunBatchSelfPlayUseCase:
                 logger.error(f"Game {i + 1}/{num_games} failed: {e}", exc_info=True)
                 continue
 
-        logger.info(f"Batch self-play completed: {len(game_ids)}/{num_games} games successful")
+        logger.info(
+            f"Batch self-play completed: {len(game_ids)}/{num_games} games successful"
+        )
         return game_ids
