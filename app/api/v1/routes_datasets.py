@@ -90,5 +90,5 @@ def get_dataset_stats(db = Depends(get_db)):
     return {
         'total_completed_games': total_games,
         'outcomes': {status: count for status, count in outcomes},
-        'ready_for_ml': total_games >= 200
+        'ready_for_ml': total_games >= 500
     }
