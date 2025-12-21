@@ -1,0 +1,32 @@
+###
+# In another terminal, trigger self-play
+POST http://localhost:8000/api/v1/self-play/start
+Content-Type: application/json
+
+{
+  "num_games": 1000,
+  "difficulty_x": "medium",
+  "difficulty_o": "hard",
+  "add_noise": true
+}
+
+
+###
+GET http://localhost:8000/api/v1/self-play/status/ca1c7837-2ee3-42cf-b3d4-29996ac05a0a
+Content-Type: application/json"
+
+
+###
+
+POST http://localhost:8000/api/v1/datasets/export
+Content-Type: application/json
+
+{
+  "format": "parquet",
+  "max_games": 1000
+}
+
+###
+
+GET http://localhost:8000/api/v1/datasets/stats
+Content-Type: application/json
