@@ -17,6 +17,20 @@ from app.domain import GameStatus, Mark
 
 SCHEMA = settings.db_schema
 
+"""
+Operational ORM Models (Transactional Database)
+
+These models represent the current state of active games:
+- Game: Current game state (board, next player, status)
+- MoveLog: Individual moves as they happen
+
+Purpose: Support real-time gameplay, enforce game rules, manage active sessions
+Data Lifecycle: Games are marked finished but typically remain in this table
+Schema: Uses settings.db_schema (e.g., "public")
+
+See also: app/application/analytics_models.py for analytical/reporting models
+"""
+
 
 class GameMode(str, PyEnum):
     PVAI = "pvai"

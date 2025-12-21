@@ -44,16 +44,20 @@ app/
 │
 ├── application/                 # Application Layer (Use Cases)
 │   ├── dtos.py                 # Data Transfer Objects (Commands, Queries, Responses)
-│   ├── use_cases.py            # Use case implementations
+│   ├── use_cases.py            # Use case implementations (includes self-play)
 │   ├── mappers.py              # Domain to DTO conversion
+│   ├── analytics_models.py     # SQLAlchemy models for analytics tables
+│   ├── ml_dataset_service.py   # Dataset export service
 │   └── __init__.py             # Application API exports
 │
 ├── infrastructure/              # Infrastructure Layer (External Dependencies)
-│   ├── orm_models.py           # SQLAlchemy ORM definitions
+│   ├── orm_models.py           # SQLAlchemy ORM definitions (operational tables)
 │   ├── persistence/
 │   │   ├── repositories.py     # SQLAlchemy repository implementation
 │   │   ├── mappers.py          # Domain to ORM conversion
 │   │   └── __init__.py
+│   ├── analytics/
+│   │   └── selfplay_repository.py  # Analytics-only repository for self-play
 │   └── services/
 │       ├── ai_service.py       # HTTP AI service client
 │       ├── platform_service.py # Platform integration client
@@ -62,7 +66,9 @@ app/
 │
 ├── api/                         # Presentation Layer
 │   └── v1/
-│       └── routes_games.py     # FastAPI route handlers
+│       ├── routes_games.py     # Game and move endpoints
+│       ├── routes_selfplay.py  # Self-play orchestration endpoints
+│       └── routes_datasets.py  # Dataset export endpoints
 │
 ├── core/                        # Core Configuration
 │   ├── config.py               # Application settings
@@ -202,13 +208,121 @@ For PvAI games, human moves trigger automatic AI response via background task.
 
 **Hard**: 30,000 MCTS iterations, 0% random move probability. Optimal play with slower response time.
 
+## AI vs AI Self-Play System
+
+The backend includes a self-play system for generating machine learning training data by running AI agents against each other.
+
+### How It Works
+
+The self-play system runs AI vs AI games in-memory without requiring a frontend or user interaction. Games are stored in separate analytics tables to keep training data isolated from operational gameplay.
+
+**Architecture:**
+
+1. **Self-Play Orchestration**: Backend manages game flow and calls AI service for each move
+2. **AI Service Integration**: Each move is calculated by the external MCTS AI service
+3. **Analytics Storage**: Game results and move data are stored in dedicated analytics tables
+4. **Dataset Export**: Completed games can be exported for ML model training
+
+### API Endpoints
+
+**Start Self-Play Batch**
+```
+POST /api/v1/self-play/start
+Body: {
+  "num_games": 1000,
+  "difficulty_x": "medium",
+  "difficulty_o": "hard",
+  "add_noise": true,
+  "alternate_starting_player": true
+}
+Response: {
+  "job_id": "uuid",
+  "status": "running",
+  "num_games": 1000,
+  "games_completed": 0
+}
+```
+
+**Check Job Status**
+```
+GET /api/v1/self-play/status/{job_id}
+Response: {
+  "job_id": "uuid",
+  "status": "completed",
+  "num_games": 1000,
+  "games_completed": 1000
+}
+```
+
+**Export Dataset**
+```
+POST /api/v1/datasets/export
+Body: {
+  "format": "parquet",
+  "max_games": 1000
+}
+Response: Parquet file download with game and move data
+```
+
+**Get Dataset Statistics**
+```
+GET /api/v1/datasets/stats
+Response: {
+  "total_completed_games": 1000,
+  "outcomes": {"X_win": 420, "O_win": 380, "draw": 200},
+  "ready_for_ml": true
+}
+```
+
+### Analytics Database Schema
+
+Self-play games are stored in dedicated analytics tables separate from operational game data.
+
+**game_analytics table**: Stores game metadata including player configurations, difficulty levels, outcomes, and timestamps. Used for dataset filtering and statistics.
+
+**move_analytics table**: Records detailed move-by-move data including board states before and after each move, heuristic evaluations, and MCTS metadata. Contains all information needed for ML model training.
+
+**Key Columns for ML:**
+- Board state representations (before/after each move)
+- Legal moves mask (valid positions bitmap)
+- MCTS evaluation scores and statistics
+- Game outcomes from each player's perspective
+- Move quality indicators (heuristic values)
+
+### Self-Play Configuration
+
+**Difficulty Mixing**: Run games with different AI strength combinations to create diverse training data.
+
+**Noise Addition**: Optional randomness injection (15% chance of suboptimal move) to increase move variety and prevent overfitting.
+
+**Starting Player Alternation**: Automatically alternate which player (X or O) starts each game to balance the dataset.
+
+### Integration with ML Pipeline
+
+The self-play system integrates with the AI Modules repository for dataset versioning:
+
+1. **Generate Games**: Backend runs self-play and stores results in analytics tables
+2. **Export Data**: AI Modules queries backend API to retrieve completed games
+3. **Version Datasets**: DVC tracks exported datasets in Git and MinIO storage
+4. **Train Models**: ML models use versioned datasets for reproducible training
+
+For more information on dataset export and versioning, see the AI Modules repository documentation.
+
 ## Database Schema
 
 The application uses PostgreSQL with a configurable schema (default: tictactoe).
 
-**games table**: Stores game state including player information, current status, board representation, mode, difficulty, and timestamps.
+### Operational Tables
+
+**games table**: Stores game state including player information, current status, board representation, mode, difficulty, and timestamps. Used for active gameplay.
 
 **moves table**: Records move history with position, player, mark, game state snapshots (before/after), heuristic values, and timestamps. Foreign key to games with cascade delete.
+
+### Analytics Tables
+
+**game_analytics table**: Stores metadata for completed self-play games including difficulty combinations, outcomes, and game duration. Used for ML dataset generation and statistics.
+
+**move_analytics table**: Records detailed move data for self-play games including board states, MCTS evaluations, and move quality metrics. Optimized for ML training data export.
 
 ## Configuration
 
