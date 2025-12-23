@@ -170,7 +170,7 @@ Body: {
   "player_o_id": "string" (optional, required for PvP),
   "player_o_name": "string" (optional),
   "mode": "pvai" | "pvp",
-  "ai_difficulty": "easy" | "medium" | "hard" (optional, default: medium)
+  "ai_difficulty": "easy" | "medium" | "hard" | "unbeatable" | "ml" (optional, default: medium)
 }
 Response: GameResponse with complete game state
 ```
@@ -187,7 +187,7 @@ POST /games/{game_id}/moves
 Body: {
   "row": 0-2 (optional for AI move),
   "col": 0-2 (optional for AI move),
-  "ai_difficulty": "easy" | "medium" | "hard" (optional)
+  "ai_difficulty": "easy" | "medium" | "hard" | "unbeatable" | "ml" (optional)
 }
 Response: GameResponse with updated game state
 ```
@@ -199,14 +199,15 @@ For PvAI games, human moves trigger automatic AI response via background task.
 **Player vs Player (PvP)**: Two human players alternate turns. Both player IDs required at game creation.
 
 **Player vs AI (PvAI)**: Human plays as X, AI plays as O. AI moves are calculated by external service using Monte Carlo Tree Search with configurable difficulty.
+Unbeatable difficulty is using MinMax algorithm.
 
 ### AI Difficulty Levels
 
-**Easy**: 1,000 MCTS iterations, 30% random move probability. Fast response with frequent mistakes.
+**Easy**: 200 MCTS iterations, 50% random move probability. Fast response with frequent mistakes.
 
-**Medium**: 5,000 MCTS iterations, 15% random move probability. Balanced performance and difficulty.
+**Medium**: 1200 MCTS iterations, 12% random move probability. Balanced performance and difficulty.
 
-**Hard**: 30,000 MCTS iterations, 0% random move probability. Optimal play with slower response time.
+**Hard**: 9000 MCTS iterations, 0% random move probability. Optimal play with slower response time.
 
 ## AI vs AI Self-Play System
 

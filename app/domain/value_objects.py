@@ -51,6 +51,8 @@ class AIDifficulty(str, Enum):
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
+    UNBEATABLE = "unbeatable"
+    ML = "ml"
 
 
 @dataclass(frozen=True)
