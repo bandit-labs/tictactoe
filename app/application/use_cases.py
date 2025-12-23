@@ -312,10 +312,14 @@ class RunSelfPlayGameUseCase:
 
             # Add noise
             if add_noise and random.random() < 0.15:
-                difficulties = ["easy", "medium", "hard"]
-                idx = difficulties.index(current_difficulty)
-                if idx > 0:
-                    current_difficulty = difficulties[idx - 1]
+                difficulties = ["easy", "medium", "hard", "unbeatable", "ml"]
+                try:
+                    idx = difficulties.index(current_difficulty)
+                    if idx > 0:
+                        current_difficulty = difficulties[idx - 1]
+                except ValueError:
+                    # If difficulty not in list, skip noise
+                    pass
 
             # Get AI move
             position, evaluation, metadata = self.ai_service.calculate_move(
