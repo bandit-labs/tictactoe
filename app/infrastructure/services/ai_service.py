@@ -83,3 +83,4 @@ class HttpAIService(IAIService):
 
         except requests.RequestException as e:
             raise RuntimeError(f"Failed to get AI move: {str(e)}") from e
+
