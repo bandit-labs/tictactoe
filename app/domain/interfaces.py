@@ -36,7 +36,9 @@ class IGameRepository(ABC):
 class IAIService(ABC):
     """
     Service interface for AI move calculation
-    Abstraction for external AI service
+    Abstraction for external AI service (MCTS/Minimax algorithms)
+
+    Note: Hint functionality has been moved to ML Service
     """
 
     @abstractmethod
