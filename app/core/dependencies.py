@@ -46,6 +46,16 @@ def get_ai_service() -> IAIService:
 
 
 @lru_cache()
+def get_ml_service():
+    """
+    Get ML service instance (singleton)
+    """
+    from app.infrastructure.services.ml_service import HttpMLService
+
+    return HttpMLService(base_url=settings.ml_service_url)
+
+
+@lru_cache()
 def get_platform_service() -> IPlatformService:
     """
     Get platform service instance (singleton)

@@ -23,8 +23,8 @@ class CreateGameCommand(BaseModel):
     player_o_id: Optional[str] = Field(None, description="Player O ID (for PvP mode)")
     player_o_name: Optional[str] = Field(None, description="Player O display name")
     mode: Literal["pvai", "pvp"] = Field(..., description="Game mode")
-    ai_difficulty: Optional[Literal["easy", "medium", "hard"]] = Field(
-        "medium", description="AI difficulty (only for PvAI mode)"
+    ai_difficulty: Optional[Literal["easy", "medium", "hard", "unbeatable", "ml"]] = (
+        Field("medium", description="AI difficulty (only for PvAI mode)")
     )
 
 
@@ -37,8 +37,8 @@ class PlayMoveCommand(BaseModel):
     player_id: str = Field(..., description="Player making the move")
     row: Optional[int] = Field(None, description="Row index (0-2)")
     col: Optional[int] = Field(None, description="Column index (0-2)")
-    ai_difficulty: Optional[Literal["easy", "medium", "hard"]] = Field(
-        None, description="AI difficulty override"
+    ai_difficulty: Optional[Literal["easy", "medium", "hard", "unbeatable", "ml"]] = (
+        Field(None, description="AI difficulty override")
     )
 
 

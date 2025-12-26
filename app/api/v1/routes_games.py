@@ -14,6 +14,7 @@ from app.core.dependencies import (
     get_get_game_use_case,
     get_play_move_use_case,
     get_ai_service,
+    get_ml_service,
     get_platform_service,
     get_game_state_serializer,
 )
@@ -24,6 +25,8 @@ from app.domain import (
     IGameStateSerializer,
     GameStatus,
     PlayerFactory,
+    Mark,
+    Position,
 )
 
 from app.application import (
@@ -122,6 +125,54 @@ def get_game_endpoint(
         raise HTTPException(status_code=404, detail="Game not found")
 
     return GameMapper.to_response(game)
+
+
+@router.get("/{game_id}/hint")
+def get_hint_endpoint(
+    game_id: str,
+    use_case: GetGameUseCase = Depends(inject_get_game_use_case),
+    ml_service=Depends(get_ml_service),
+):
+    """
+    Get a hint for the next move
+    Calls ML service to suggest the best move using ML models
+    """
+    query = GetGameQuery(game_id=game_id)
+    game = use_case.execute(query)
+
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if game.status != GameStatus.IN_PROGRESS:
+        raise HTTPException(status_code=400, detail="Game is already finished")
+
+    try:
+        # Convert game board to ML service format
+        board_2d = []
+        for row_idx in range(3):
+            row = []
+            for col_idx in range(3):
+                pos = Position(row=row_idx, col=col_idx)
+                cell = game.board.get_cell(pos)
+                if cell == Mark.X:
+                    row.append("X")
+                elif cell == Mark.O:
+                    row.append("O")
+                else:
+                    row.append(None)
+            board_2d.append(row)
+
+        current_player_str = "X" if game.next_player == Mark.X else "O"
+
+        # Call ML service hint endpoint
+        hint_result = ml_service.get_hint(board_2d, current_player_str)
+
+        return hint_result
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get hint: {str(e)}")
 
 
 @router.post("/{game_id}/moves", response_model=GameResponse)

@@ -16,8 +16,12 @@ class Settings(BaseSettings):
     demo_player_o_name: str = "Player O"
 
     ai_service_url: str = Field(
+        default="http://localhost:8002",
+        description="Base URL of the external AI service (MCTS/Minimax)",
+    )
+    ml_service_url: str = Field(
         default="http://localhost:8001",
-        description="Base URL of the external AI (MCTS) service",
+        description="Base URL of the ML prediction service",
     )
     ai_difficulty_default: str = Field(
         default="medium",
