@@ -131,7 +131,7 @@ def get_game_endpoint(
 def get_hint_endpoint(
     game_id: str,
     use_case: GetGameUseCase = Depends(inject_get_game_use_case),
-    ml_service = Depends(get_ml_service),
+    ml_service=Depends(get_ml_service),
 ):
     """
     Get a hint for the next move
