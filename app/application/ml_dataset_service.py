@@ -39,7 +39,8 @@ def _calculate_legal_moves(board_str: str) -> str:
     Calculate legal moves mask from board string
     Returns: 9-char binary string, e.g., "101010101"
     """
-    return "".join("1" if c == "." else "0" for c in board_str)
+    # Empty positions can be either '.' or ' ' (space)
+    return "".join("1" if c not in ("X", "O") else "0" for c in board_str)
 
 
 def _map_outcome(status: str) -> str:
