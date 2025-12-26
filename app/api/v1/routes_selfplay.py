@@ -23,8 +23,12 @@ class SelfPlayRequest(BaseModel):
     num_games: int = Field(
         default=100, ge=1, le=10000, description="Number of games to play"
     )
-    difficulty_x: str = Field(default="medium", pattern="^(easy|medium|hard|unbeatable|ml)$")
-    difficulty_o: str = Field(default="medium", pattern="^(easy|medium|hard|unbeatable|ml)$")
+    difficulty_x: str = Field(
+        default="medium", pattern="^(easy|medium|hard|unbeatable|ml)$"
+    )
+    difficulty_o: str = Field(
+        default="medium", pattern="^(easy|medium|hard|unbeatable|ml)$"
+    )
     add_noise: bool = Field(default=True, description="Add randomness for move variety")
     alternate_starting_player: bool = Field(
         default=True, description="Alternate X/O each game"

@@ -5,14 +5,14 @@ Content-Type: application/json
 
 {
   "num_games": 1000,
-  "difficulty_x": "medium",
+  "difficulty_x": "hard",
   "difficulty_o": "hard",
   "add_noise": true
 }
 
 
 ###
-GET http://localhost:8000/api/v1/self-play/status/ca1c7837-2ee3-42cf-b3d4-29996ac05a0a
+GET http://localhost:8000/api/v1/self-play/status/e5e057be-e684-4552-adc1-a70784d254f5
 Content-Type: application/json"
 
 

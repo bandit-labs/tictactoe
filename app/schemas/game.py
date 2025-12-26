@@ -18,7 +18,9 @@ class GameCreate(BaseModel):
 
     player_x_name: Optional[str] = None
     player_o_name: Optional[str] = None
-    ai_difficulty: Optional[Literal["easy", "medium", "hard", "unbeatable", "ml"]] = "medium"
+    ai_difficulty: Optional[Literal["easy", "medium", "hard", "unbeatable", "ml"]] = (
+        "medium"
+    )
 
 
 class GameRead(BaseModel):
