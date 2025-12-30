@@ -19,9 +19,12 @@ class CreateGameCommand(BaseModel):
     """
 
     player_x_id: str = Field(..., description="Player X ID")
-    player_x_name: Optional[str] = Field(None, description="Player X display name")
-    player_o_id: Optional[str] = Field(None, description="Player O ID (for PvP mode)")
-    player_o_name: Optional[str] = Field(None, description="Player O display name")
+    player_x_name: Optional[str] = Field(
+        None, description="Player X display name")
+    player_o_id: Optional[str] = Field(
+        None, description="Player O ID (for PvP mode)")
+    player_o_name: Optional[str] = Field(
+        None, description="Player O display name")
     mode: Literal["pvai", "pvp"] = Field(..., description="Game mode")
     ai_difficulty: Optional[Literal["easy", "medium", "hard", "unbeatable", "ml"]] = (
         Field("medium", description="AI difficulty (only for PvAI mode)")
@@ -72,6 +75,7 @@ class GameResponse(BaseModel):
     board: List[List[str]]
     created_at: datetime
     finished_at: Optional[datetime]
+    sessionUrl: str
 
     class Config:
         from_attributes = True
