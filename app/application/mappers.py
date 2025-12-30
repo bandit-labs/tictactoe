@@ -38,4 +38,5 @@ class GameMapper:
             board=board_list,
             created_at=game.created_at,
             finished_at=game.finished_at,
+            sessionUrl=f"http://localhost:5175?gameId={game.id}"
         )
