@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     )
 
     # RabbitMQ
-    rabbitmq_user: str = "user"
+    rabbitmq_user: str = 'user'
     rabbitmq_password: str = "password"
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
